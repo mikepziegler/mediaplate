@@ -59,6 +59,8 @@ services:
 #    build:
 #      context: .
 #      dockerfile: docker/angular.Dockerfile
+#      env_file:
+#        - .env.docker
 #      args:
 #        APP_DIR: apps/admin-frontend
 #    ports:
