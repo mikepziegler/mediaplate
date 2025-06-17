@@ -2,7 +2,11 @@
   "name": "@mediaplate/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "admin:start": "npx nx serve admin",
+    "client:start": "npx nx serve client",
+    "api:start": "npx nx serve api"
+  },
   "private": true,
   "dependencies": {
     "@angular/common": "~20.0.0",
@@ -25,6 +29,7 @@
     "reflect-metadata": "^0.1.13",
     "rxjs": "~7.8.0",
     "typeorm": "^0.3.24",
+    "uuid": "^11.1.0",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
@@ -53,6 +58,7 @@
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
     "@types/jest": "^29.5.12",
+    "@types/multer": "^1.4.13",
     "@types/node": "18.16.9",
     "@typescript-eslint/utils": "^8.29.0",
     "angular-eslint": "20.0.0",

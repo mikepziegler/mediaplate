@@ -1,8 +1,9 @@
 # This docker-compose.yml is to create all instances of services in order to develop integrations for those services
+# It will be for used for local development
 
 version: '3.9'
 
-# The Credentials
+# The Credentials are for development purposes only
 
 services:
   postgres:
@@ -29,23 +30,23 @@ services:
     volumes:
       - miniodata:/data
 
-  api:
-    build:
-      context: .
-      dockerfile: docker/api.Dockerfile
-    depends_on:
-      - postgres
-      - minio
-    environment:
-      DATABASE_URL: postgres://user:password@postgres:5432/mediaplate
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin123
-      STORAGE_DRIVER: minio
-    ports:
-      - "3000:3000"
-
 # Will be commented out when the application can stand
+#  api:
+#    build:
+#      context: .
+#      dockerfile: docker/api.Dockerfile
+#    depends_on:
+#      - postgres
+#      - minio
+#    environment:
+#      DATABASE_URL: postgres://user:password@postgres:5432/mediaplate
+#      MINIO_ENDPOINT: http://minio:9000
+#      MINIO_ACCESS_KEY: minioadmin
+#      MINIO_SECRET_KEY: minioadmin123
+#      STORAGE_DRIVER: minio
+#    ports:
+#      - "3000:3000"
+
 #  client:
 #    build:
 #      context: .
