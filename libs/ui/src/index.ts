@@ -1,1 +1,1 @@
-export * from './lib/ui/ui';
+export * from './layouts/layouts.index';

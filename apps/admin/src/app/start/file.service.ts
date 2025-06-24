@@ -10,9 +10,7 @@ export class FileService {
   private http: HttpClient = inject(HttpClient)
 
   getAllFiles(): Observable<any> {
-
     return this.http.get(environment.apiUrl + '/files');
-
   }
 
   uploadFile(files: FileList): Observable<{ path: string }> {

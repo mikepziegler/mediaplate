@@ -20,7 +20,11 @@ export class FilesService {
     console.log(`Getting all filenames from ${this.storagePath}`);
 
     try {
-      return fs.readdirSync(this.storagePath);
+
+      const files = fs.readdirSync(this.storagePath);
+      console.log(files);
+
+      return files;
     } catch (e: any) {
       throw new InternalServerErrorException(e.message);
     }

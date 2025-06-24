@@ -16,7 +16,7 @@ export class FilesController {
 
   @Get()
   async getAllFilenames() {
-    await this.filesService.getAllFilenames()
+    return await this.filesService.getAllFilenames()
   }
 
   @Get(':filename')
