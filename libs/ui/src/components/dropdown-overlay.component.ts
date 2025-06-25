@@ -5,24 +5,29 @@ import { NgClass } from '@angular/common';
   selector: 'ui-filedrop-overlay',
   template: `
     <div
-      class="absolute inset-0 z-50 pointer-events-none transition-opacity duration-200"
+      class="absolute inset-0 z-50 pointer-events-none transition-opacity duration-200 h-full w-full"
       [class.opacity-100]="isDragging"
       [class.opacity-0]="!isDragging"
       [class.bg-black]="isDragging"
       [class.bg-opacity-30]="isDragging"
     >
       <div
-        class="w-full h-full flex items-center justify-center pointer-events-auto"
-        (dragenter)="onDragEnter($event)"
-        (dragover)="onDragOver($event)"
-        (dragleave)="onDragLeave($event)"
-        (drop)="onDrop($event)"
+        class="w-full h-full flex items-center justify-center"
       >
-        <div class="text-white text-2xl border-2 border-white p-4 rounded">
-          Drop files here
+        <div
+          class="pointer-events-auto"
+          (dragenter)="onDragEnter($event)"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <div class="text-white text-2xl border-2 border-white p-4 rounded">
+            Drop files here
+          </div>
         </div>
       </div>
     </div>
+
   `,
 })
 export class FileDropOverlayComponent {

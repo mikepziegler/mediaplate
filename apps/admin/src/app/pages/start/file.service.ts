@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
 
 
@@ -16,9 +16,13 @@ export class FileService {
   uploadFile(files: FileList): Observable<{ path: string }> {
     const formData = new FormData();
     for (const file of Array.from(files)) {
-      formData.append('file', file); // Change to `files[]` if backend expects an array
+      formData.append('files', file); // Change to `files[]` if backend expects an array
     }
 
     return this.http.post<{ path: string }>(`${environment.apiUrl}/files/upload`, formData);
+  }
+
+  deleteFile() {
+
   }
 }

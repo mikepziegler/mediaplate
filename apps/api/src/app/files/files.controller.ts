@@ -2,10 +2,10 @@
 import {
   Controller, Get, NotFoundException, Param,
   Post, Res,
-  UploadedFile,
+  UploadedFile, UploadedFiles,
   UseInterceptors
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { FilesService } from './files.service';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
@@ -31,11 +31,10 @@ export class FilesController {
   }
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadFile(@UploadedFile() file: Express.Multer.File): { path: string } {
-    console.log('files uploaded')
-    const savedPath = this.filesService.saveFile(file);
-    return { path: savedPath };
+  @UseInterceptors(FilesInterceptor('files')) // <-- name must match frontend
+  uploadFiles(@UploadedFiles() files: Express.Multer.File[]) {
+    const savedPaths = files.map((file) => this.filesService.saveFile(file));
+    return { paths: savedPaths };
   }
 
 
