@@ -1,6 +1,9 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FileService } from './file.service';
-import { AppLayoutComponent, FileDropzoneComponent } from '@ui';
+import { AppLayoutComponent, FileDropzoneComponent } from '@mediaplate/ui';
+import { FileTreeComponent } from '@mediaplate/ui';
+import { FileNode } from '@mediaplate/common';
+import { plainToInstance } from 'class-transformer';
 
 @Component({
   selector: 'app-start',
@@ -9,53 +12,41 @@ import { AppLayoutComponent, FileDropzoneComponent } from '@ui';
       <div>
         <div class="p-6 flex flex-col gap-4">
           <div class="flex w-full">
-            <ui-file-dropzone (filesSelected)="handleFiles($event)" />
+            <ui-file-dropzone (fileDropped)="handleFiles($event)" />
           </div>
           <div>
             <h1>Files</h1>
-            <div class="flex flex-col divide-y">
-              @for (file of files; let i = $index; track i) {
-              <div class="py-4 flex gap-4">
-                <div class="mr-auto">
-                  <span>{{ file }}</span>
-                </div>
-                <div>
-                  <span>View</span>
-                </div>
-                <div>
-                  <span>Delete</span>
-                </div>
-              </div>
-              }
-            </div>
+            <ui-file-tree [nodes]="tree"/>
           </div>
         </div>
       </div>
     </ui-app-layout>
   `,
   providers: [FileService],
-  imports: [AppLayoutComponent, FileDropzoneComponent],
+  imports: [AppLayoutComponent, FileDropzoneComponent, FileTreeComponent],
 })
 export class StartComponent implements OnInit {
-  files: string[] = [];
+  tree: FileNode[] = [];
   private fileService = inject(FileService);
 
   ngOnInit() {
-    this.fileService.getAllFiles().subscribe((files) => {
-      this.files = files;
+    this.fileService.getAllFiles().subscribe((tree) => {
+
+      console.log(tree)
+
+      this.tree = plainToInstance(FileNode, tree);
     });
   }
 
-  handleFiles(files: FileList | null) {
+  handleFiles(files: File[]) {
     if (!files) return; // TODO: Error handling
 
-    this.fileService.uploadFile(files)
-      .subscribe({
-        next: (res: any) => console.log('Upload successful:', res),
-        error: (err: any) => console.error('Upload failed:', err),
-        complete: () => {
-          this.ngOnInit();
-        },
-      });
+    this.fileService.uploadFile(files).subscribe({
+      next: (res: any) => console.log('Upload successful:', res),
+      error: (err: any) => console.error('Upload failed:', err),
+      complete: () => {
+        this.ngOnInit();
+      },
+    });
   }
 }

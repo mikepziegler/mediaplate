@@ -1,34 +1,44 @@
-// files.service.ts
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { mkdirSync, existsSync, writeFileSync } from 'fs';
+import { mkdirSync, existsSync } from 'fs';
+import { buildFileTree, FileNode } from '@mediaplate/common';
 
 @Injectable()
 export class FilesService {
   private readonly storagePath = process.env.LOCAL_STORAGE_PATH || './uploads';
 
   constructor() {
-    // Ensure the folder exists
     if (!existsSync(this.storagePath)) {
       mkdirSync(this.storagePath, { recursive: true });
     }
   }
 
-  async getAllFilenames() {
+  async getAllFilenames(): Promise<FileNode[]> {
+    const filenames: string[] = [];
 
-    console.log(`Getting all filenames from ${this.storagePath}`);
+    const walk = (dir: string, relativeRoot = '') => {
+      const items = fs.readdirSync(dir);
+
+      for (const item of items) {
+        const fullPath = path.join(dir, item);
+        const relativePath = path.join(relativeRoot, item);
+        const stat = fs.statSync(fullPath);
+
+        if (stat.isDirectory()) {
+          walk(fullPath, relativePath);
+        } else {
+          filenames.push(relativePath.replace(/\\/g, '/'));
+        }
+      }
+    };
 
     try {
-
-      const files = fs.readdirSync(this.storagePath);
-      console.log(files);
-
-      return files;
+      walk(this.storagePath);
+      return buildFileTree(filenames);
     } catch (e: any) {
       throw new InternalServerErrorException(e.message);
     }
-
   }
 
   getFilePath(filename: string): string {
@@ -36,15 +46,13 @@ export class FilesService {
   }
 
   saveFile(file: Express.Multer.File): string {
-    console.log(file);
+    const normalizedPath = file.originalname.replace(/\\/g, '/');
+    const targetPath = path.join(this.storagePath, normalizedPath);
 
-    const filePath = path.join(this.storagePath, file.originalname);
+    const dir = path.dirname(targetPath);
+    fs.mkdirSync(dir, { recursive: true });
 
-    try {
-      writeFileSync(filePath, file.buffer);
-      return filePath;
-    } catch (error: any) {
-      throw new InternalServerErrorException('Failed to save file.');
-    }
+    fs.writeFileSync(targetPath, file.buffer);
+    return targetPath;
   }
 }

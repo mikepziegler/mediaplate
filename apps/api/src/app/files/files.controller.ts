@@ -1,14 +1,13 @@
-// files.controller.ts
 import {
   Controller, Get, NotFoundException, Param,
-  Post, Res,
-  UploadedFile, UploadedFiles,
-  UseInterceptors
+  Post, Res, UploadedFiles, UseInterceptors
 } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { FilesService } from './files.service';
-import * as path from 'node:path';
 import * as fs from 'node:fs';
+import * as multer from 'multer';
+
+const memoryStorage = multer.memoryStorage();
 
 @Controller('files')
 export class FilesController {
@@ -20,23 +19,24 @@ export class FilesController {
   }
 
   @Get(':filename')
-  async getFile(@Param('filename') filename: string, @Res() res: Response) {
+  async getFile(@Param('filename') filename: string) {
     const filePath = this.filesService.getFilePath(filename);
 
     if (!fs.existsSync(filePath)) {
       throw new NotFoundException('File not found');
     }
 
-    // res.sendFile(path.resolve(filePath));
   }
 
+  @UseInterceptors(FilesInterceptor('files', 100, {
+    storage: memoryStorage,
+    preservePath: true,
+  }))
   @Post('upload')
-  @UseInterceptors(FilesInterceptor('files')) // <-- name must match frontend
-  uploadFiles(@UploadedFiles() files: Express.Multer.File[]) {
+  async uploadFiles(@UploadedFiles() files: Express.Multer.File[]) {
+    console.log(files.map(f => f.originalname));
     const savedPaths = files.map((file) => this.filesService.saveFile(file));
     return { paths: savedPaths };
   }
-
-
 
 }

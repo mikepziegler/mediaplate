@@ -19,7 +19,7 @@ import { NgClass } from '@angular/common';
         class="hidden"
         #fileInput
         [attr.accept]="accept"
-        (change)="onFileChange($event)"
+        webkitdirectory
         multiple
         [disabled]="disabled"
       />
@@ -36,44 +36,27 @@ import { NgClass } from '@angular/common';
         </span>
         or drag files to upload
       </p>
-
-      @if (accept && !disabled) {
-        <p class="text-xs text-gray-400 mt-2">
-          Accepted: {{ accept }}
-        </p>
-      }
-
-      @if (errorFiles.length > 0) {
-        <div class="mt-4 text-sm text-red-500">
-          <p>Some files were rejected:</p>
-          <ul class="list-disc list-inside">
-            @for (file of errorFiles; let i = $index; track i) {
-              <li>{{ file }}</li>
-            }
-          </ul>
-        </div>
-      }
-
-
     </div>
   `,
   host: {
-    class: 'block w-full', // This ensures the <ui-file-dropzone> tag fills width
+    class: 'block w-full'
   },
 })
 export class FileDropzoneComponent {
-  @Input() accept = ''; // Defaults to all files if not provided
+  @Input() accept = '';
   @Input() disabled = false;
-  @Output() filesSelected = new EventEmitter<FileList | null>();
+
+  @Output() fileDropped = new EventEmitter<File[]>();
+  @Output() dragStateChange = new EventEmitter<boolean>();
 
   isDragging = false;
-  errorFiles: string[] = [];
 
   @HostListener('dragover', ['$event'])
   onDragOver(evt: DragEvent) {
     if (this.disabled) return;
     evt.preventDefault();
     this.isDragging = true;
+    this.dragStateChange.emit(true)
   }
 
   @HostListener('dragleave', ['$event'])
@@ -84,21 +67,33 @@ export class FileDropzoneComponent {
   }
 
   @HostListener('drop', ['$event'])
-  onDrop(evt: DragEvent) {
+  async onDrop(event: DragEvent) {
     if (this.disabled) return;
-    evt.preventDefault();
+    event.preventDefault();
     this.isDragging = false;
+    this.dragStateChange.emit(false);
 
-    if (evt.dataTransfer?.files.length) {
-      this.handleFileList(evt.dataTransfer.files);
+    const items = event.dataTransfer?.items;
+    if (!items) return;
+
+    const files: File[] = [];
+    const promises: Promise<void>[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const entry = items[i].webkitGetAsEntry?.();
+      if (entry) {
+        promises.push(this.traverseFileTree(entry, '', files));
+      }
     }
-  }
 
-  onFileChange(event: Event) {
-    if (this.disabled) return;
-    const input = event.target as HTMLInputElement;
-    if (input.files) {
-      this.handleFileList(input.files);
+    await Promise.all(promises);
+
+    const acceptedFiles = this.accept.length > 0
+      ? files.filter(file => this.accept.includes(file.type))
+      : files;
+
+    if (acceptedFiles.length > 0) {
+      this.fileDropped.emit(files);
     }
   }
 
@@ -108,45 +103,25 @@ export class FileDropzoneComponent {
     }
   }
 
-  private handleFileList(fileList: FileList) {
-    const accepted = this.filterAcceptedFiles(fileList);
-    const rejected = this.getRejectedFileNames(fileList, accepted);
-    this.errorFiles = rejected;
-
-    if (accepted.length > 0) {
-      const finalList = this.toFileList(accepted);
-      this.filesSelected.emit(finalList);
-    } else {
-      this.filesSelected.emit(null);
-    }
-  }
-
-  private filterAcceptedFiles(files: FileList): File[] {
-    if (!this.accept || this.accept.trim() === '') return Array.from(files); // default: accept all
-
-    const acceptedTypes = this.accept.split(',').map((t) => t.trim());
-    return Array.from(files).filter((file) => {
-      return acceptedTypes.some((type) => {
-        if (type === '*/*') return true;
-        if (type.endsWith('/*')) {
-          const baseType = type.split('/')[0];
-          return file.type.startsWith(baseType + '/');
-        }
-        return file.type === type || file.name.endsWith(type);
-      });
+  private traverseFileTree(entry: any, path: string, files: File[]): Promise<void> {
+    return new Promise((resolve) => {
+      if (entry.isFile) {
+        entry.file((file: File) => {
+          (file as any).relativePath = path + file.name;
+          files.push(file);
+          resolve();
+        });
+      } else if (entry.isDirectory) {
+        const dirReader = entry.createReader();
+        dirReader.readEntries((entries: any[]) => {
+          const subPromises = entries.map(e =>
+            this.traverseFileTree(e, path + entry.name + '/', files),
+          );
+          Promise.all(subPromises).then(() => resolve());
+        });
+      } else {
+        resolve();
+      }
     });
-  }
-
-  private getRejectedFileNames(all: FileList, accepted: File[]): string[] {
-    const acceptedNames = new Set(accepted.map((f) => f.name));
-    return Array.from(all)
-      .filter((file) => !acceptedNames.has(file.name))
-      .map((file) => file.name);
-  }
-
-  private toFileList(files: File[]): FileList {
-    const dataTransfer = new DataTransfer();
-    files.forEach((f) => dataTransfer.items.add(f));
-    return dataTransfer.files;
   }
 }
