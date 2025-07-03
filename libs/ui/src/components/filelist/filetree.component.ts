@@ -20,7 +20,7 @@ import { FileNode, FileNodeType } from '@mediaplate/common';
             </div>
           }
 
-          @if (node.expanded && node.children && node.children?.length) {
+          @if (node.expanded && node.children) {
             <div class="ml-8 my-4">
               <ui-file-tree [nodes]="node.children" />
             </div>
