@@ -1,1 +1,2 @@
-export * from './filelist/filetree.component'
+
+export * from './file-explorer/file-explorer.component';

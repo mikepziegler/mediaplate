@@ -1,0 +1,146 @@
+<!-- Group (helps with nested lists) -->
+<div class="flex flex-col h-full min-h-[320px]" cdkDropListGroup>
+
+    <!-- Breadcrumb -->
+    <nav class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b px-3 py-2"
+         aria-label="Breadcrumb">
+        <div class="flex items-center justify-between gap-3">
+
+            <!-- Trail -->
+            <div class="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
+
+                <!-- Root (droppable) -->
+                <span
+                    cdkDropList
+                    [cdkDropListEnterPredicate]="canEnterBreadcrumb"
+                    [cdkDropListSortingDisabled]="true"
+                    (cdkDropListEntered)="onCrumbEnter($event, null)"
+                    (cdkDropListExited)="onCrumbExit()"
+                    (cdkDropListDropped)="onCrumbDrop($event, null)"
+                    class="inline-flex rounded px-1 -mx-1 transition-colors"
+                    [ngClass]="{
+                    'bg-blue-100/60': rootHover()
+                    }"
+                >
+                <button type="button"
+                        class="font-medium text-gray-800 hover:text-black"
+                        (click)="goToCrumb(-1)">
+                    {{ rootLabel || 'Root' }}
+                </button>
+                </span>
+
+                <!-- Each breadcrumb segment (droppable) -->
+                @for (c of path(); let i = $index; track i) {
+                    <span class="text-gray-400 select-none">/</span>
+                    <span
+                        cdkDropList
+                        [cdkDropListEnterPredicate]="canEnterBreadcrumb"
+                        [cdkDropListSortingDisabled]="true"
+                        (cdkDropListEntered)="onCrumbEnter($event, c)"
+                        (cdkDropListExited)="onCrumbExit()"
+                        (cdkDropListDropped)="onCrumbDrop($event, c)"
+                        class="inline-flex rounded px-1 -mx-1 transition-colors"
+                        [ngClass]="{
+                        'bg-blue-100/60': crumbHover() === c
+                        }"
+                        >
+                    <button type="button"
+                            class="text-gray-700 hover:text-black max-w-[180px] truncate"
+                            title="{{ c.name }}"
+                            (click)="goToCrumb(i)">
+                        {{ c.name }}
+                    </button>
+                    </span>
+                }
+
+            </div>
+        </div>
+    </nav>
+
+    <!-- Folders -->
+    @if (folders().length) {
+        <div class="text-xs uppercase tracking-wide text-gray-500 px-4 pt-3 pb-1">Folders</div>
+        <ul class="mb-2">
+            @for (folder of folders(); track trackByKey($index, folder)) {
+                <!-- Each folder is its own drop list -->
+                <li
+                    class="relative rounded-md px-4 py-2 cursor-pointer transition-colors"
+                    [ngClass]="{
+                       'class.bg-blue-200/40': hoverFolder() === folder
+                    }"
+                    cdkDropList
+                    [cdkDropListData]="folder"
+                    [cdkDropListEnterPredicate]="canEnterFolder"
+                    [cdkDropListSortingDisabled]="true"
+                    (cdkDropListEntered)="onFolderEnter($event, folder)"
+                    (cdkDropListExited)="onFolderExit()"
+                    (cdkDropListDropped)="onFolderDrop($event, folder)"
+                    (click)="!draggingFile() && openFolder(folder)"
+                    >
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10 4a2 2 0 0 1 1.414.586L12.828 6H19a2 2 0 0 1 2 2v1H3V6a2 2 0 0 1 2-2h5z"/>
+                        <path d="M3 9h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/>
+                    </svg>
+                    <span class="text-sm text-gray-800 truncate">{{ folder.name }}</span>
+                </div>
+                </li>
+            }
+        </ul>
+    }
+
+    <!-- Files (draggable items) -->
+    @if (files().length) {
+        <div class="text-xs uppercase tracking-wide text-gray-500 px-4 pt-2 pb-1">Files</div>
+        <ul
+            cdkDropList
+            [cdkDropListSortingDisabled]="true"
+            [cdkDropListEnterPredicate]="canEnterArea"
+            (cdkDropListEntered)="onAreaEnter()"
+            (cdkDropListExited)="onAreaExit()"
+            (cdkDropListDropped)="onAreaDrop($event)"
+            class="divide-y divide-gray-100 rounded-md"
+            [ngClass]="{
+                'class.bg-blue-100/30': areaHover()
+            }"
+            >
+            @for (file of files(); track trackByKey($index, file)) {
+                <li
+                    class="group flex items-center gap-3 px-4 py-2 rounded-md hover:bg-gray-50"
+                    cdkDrag
+                    [cdkDragData]="file"
+                    (cdkDragStarted)="draggingFile.set(file)"
+                    (cdkDragEnded)="draggingFile.set(null)"
+                    (click)="fileClick.emit(file)"
+                >
+                    <ng-template cdkDragPreview>
+                        <div class="px-3 py-1 rounded bg-white shadow text-sm">{{ file.name }}</div>
+                    </ng-template>
+
+                    <svg class="w-5 h-5 text-blue-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                        <path d="M14 2v6h6"/>
+                    </svg>
+                    <span class="text-sm text-gray-800 truncate">{{ file.name }}</span>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (folders().length === 0 && files().length === 0) {
+        <div
+            cdkDropList
+            [cdkDropListEnterPredicate]="canEnterArea"
+            (cdkDropListEntered)="onAreaEnter()"
+            (cdkDropListExited)="onAreaExit()"
+            (cdkDropListDropped)="onAreaDrop($event)"
+            class="m-4 flex items-center justify-center rounded-xl border-2 border-dashed py-16 text-sm text-gray-500 transition-colors"
+            [class.border-blue-300]="draggingFile()"
+            [class.bg-blue-50]="areaHover()"
+            [class.opacity-60]="draggingFile()"
+        >
+            Drop files here to add them to this folder
+        </div>
+    }
+
+</div>
