@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+    # --- MinIO (storage) ---
+    minio:
+        image: minio/minio:latest
+        container_name: minio
+        environment:
+            MINIO_ROOT_USER: minioadmin
+            MINIO_ROOT_PASSWORD: minioadmin
+        command: server /data --console-address ":9001"
+        ports:
+            - "9000:9000" # S3 API
+            - "9001:9001" # Web console
+        volumes:
+            - ./minio-data:/data
+        healthcheck:
+            test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/ready" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        restart: unless-stopped
+
+    # --- NestJS API ---
+    api:
+        build:
+            context: .
+            dockerfile: ./apps/api/Dockerfile
+        container_name: gallery-api
+        depends_on:
+            minio:
+                condition: service_healthy
+        environment:
+            # Adjust to your NestJS config env vars
+            NODE_ENV: production
+
+            # These must match your MinIO connection in MinioService
+            MINIO_ENDPOINT: minio      # <-- service name, NOT localhost
+            MINIO_PORT: 9000
+            MINIO_ACCESS_KEY: minioadmin
+            MINIO_SECRET_KEY: minioadmin
+
+            # If your NestJS app uses other envs, add them here:
+            # PORT: 3000
+        ports:
+            - "3000:3000"
+        restart: unless-stopped
+
+    # --- Angular Frontend ---
+    frontend:
+        build:
+            context: .
+            dockerfile: ./apps/frontend/Dockerfile
+        container_name: gallery-frontend
+        depends_on:
+            - api
+        environment:
+            # If you have environment-based config in the frontend, add here.
+            # If you hard-coded `http://localhost:3000` in Angular, you may not need this.
+            # Example if you use runtime config:
+            # API_URL: http://api:3000
+            #
+            # NOTE: Nginx itself usually doesn't use these env vars unless you
+            # template them into a config. For simple setups you just hardcode the API URL.
+            DUMMY: "1"
+        ports:
+            - "4200:80" # Expose Nginx on 4200 to keep dev muscle memory
+        restart: unless-stopped
